@@ -3,18 +3,28 @@ using System.Collections.Generic;
 using System.Globalization;
 
 /// <summary>
+/// Інтерфейс для геометричних об'єктів, що визначають область.
+/// </summary>
+public interface IGeometricObject
+{
+    string GetCoefficientsString();
+    bool ContainsPoint(double[] coords);
+    void SetCoefficients(params double[] coeffs);
+}
+
+/// <summary>
 /// Абстрактний клас для півплощини/півпростору
 /// </summary>
-public abstract class AbstractHalfObject
+public abstract class AbstractHalfObject : IGeometricObject
 {
-    public abstract void PrintCoefficients();
+    public abstract string GetCoefficientsString();
     public abstract bool ContainsPoint(double[] coords);
     public abstract void SetCoefficients(params double[] coeffs);
     public abstract override string ToString();
+    
     // Конструктор
     public AbstractHalfObject() { }
-    // Деструктор
-    ~AbstractHalfObject() { }
+    // Деструктори видалено, оскільки класи не керують некерованими ресурсами.
 }
 
 /// <summary>
@@ -33,32 +43,32 @@ public class HalfPlane : AbstractHalfObject
         _a2 = a2;
         _b = b;
     }
-    // Деструктор
-    ~HalfPlane() { }
 
     /// <summary>
-    /// Встановлює коефіцієнти півплощини
+    /// Встановлює коефіцієнти півплощини.
     /// </summary>
+    /// <exception cref="ArgumentException">Викидається, якщо кількість коефіцієнтів не дорівнює 3.</exception>
     public override void SetCoefficients(params double[] coeffs)
     {
-        if (coeffs.Length == 3)
+        if (coeffs.Length != 3)
         {
-            _a1 = coeffs[0];
-            _a2 = coeffs[1];
-            _b = coeffs[2];
+            throw new ArgumentException("Для півплощини потрібно 3 коефіцієнти (a1, a2, b).", nameof(coeffs));
         }
+        _a1 = coeffs[0];
+        _a2 = coeffs[1];
+        _b = coeffs[2];
     }
 
     /// <summary>
-    /// Виводить коефіцієнти півплощини
+    /// Повертає рядок з коефіцієнтами півплощини.
     /// </summary>
-    public override void PrintCoefficients()
+    public override string GetCoefficientsString()
     {
-        Console.WriteLine($"Коефіцієнти півплощини: a1={_a1}, a2={_a2}, b={_b}");
+        return $"Коефіцієнти півплощини: a1={_a1}, a2={_a2}, b={_b}";
     }
 
     /// <summary>
-    /// Перевіряє, чи належить точка півплощині (2D)
+    /// Перевіряє, чи належить точка півплощині (2D).
     /// </summary>
     public override bool ContainsPoint(double[] coords)
     {
@@ -88,33 +98,33 @@ public class HalfSpace : AbstractHalfObject
         _a3 = a3;
         _b = b;
     }
-    // Деструктор
-    ~HalfSpace() { }
 
     /// <summary>
-    /// Встановлює коефіцієнти півпростору
+    /// Встановлює коефіцієнти півпростору.
     /// </summary>
+    /// <exception cref="ArgumentException">Викидається, якщо кількість коефіцієнтів не дорівнює 4.</exception>
     public override void SetCoefficients(params double[] coeffs)
     {
-        if (coeffs.Length == 4)
+        if (coeffs.Length != 4)
         {
-            _a1 = coeffs[0];
-            _a2 = coeffs[1];
-            _a3 = coeffs[2];
-            _b = coeffs[3];
+            throw new ArgumentException("Для півпростору потрібно 4 коефіцієнти (a1, a2, a3, b).", nameof(coeffs));
         }
+        _a1 = coeffs[0];
+        _a2 = coeffs[1];
+        _a3 = coeffs[2];
+        _b = coeffs[3];
     }
 
     /// <summary>
-    /// Виводить коефіцієнти півпростору
+    /// Повертає рядок з коефіцієнтами півпростору.
     /// </summary>
-    public override void PrintCoefficients()
+    public override string GetCoefficientsString()
     {
-        Console.WriteLine($"Коефіцієнти півпростору: a1={_a1}, a2={_a2}, a3={_a3}, b={_b}");
+        return $"Коефіцієнти півпростору: a1={_a1}, a2={_a2}, a3={_a3}, b={_b}";
     }
 
     /// <summary>
-    /// Перевіряє, чи належить точка півпростору (3D)
+    /// Перевіряє, чи належить точка півпростору (3D).
     /// </summary>
     public override bool ContainsPoint(double[] coords)
     {
@@ -126,10 +136,15 @@ public class HalfSpace : AbstractHalfObject
     public override string ToString() => $"HalfSpace: a1={_a1}, a2={_a2}, a3={_a3}, b={_b}";
 }
 
+/// <summary>
+/// Запис для зберігання пари: геометричний об'єкт та точка для перевірки.
+/// </summary>
+public record TestItem(IGeometricObject GeometricObject, double[] Point);
+
 class Program
 {
     /// <summary>
-    /// Зчитує масив чисел з консолі
+    /// Зчитує масив чисел з консолі.
     /// </summary>
     private static double[] ReadDoubles(string prompt, int count)
     {
@@ -145,7 +160,7 @@ class Program
             var arr = input.Split();
             if (arr.Length != count)
             {
-                Console.WriteLine($"Помилка: потрібно {count} чисел.");
+                Console.WriteLine($"Помилка: потрібно {count} чисел, розділених пробілом.");
                 continue;
             }
             var result = new double[count];
@@ -153,73 +168,91 @@ class Program
             for (int i = 0; i < count; i++)
                 ok &= double.TryParse(arr[i], NumberStyles.Float, CultureInfo.InvariantCulture, out result[i]);
             if (ok) return result;
-            Console.WriteLine("Помилка: некоректний ввід.");
+            Console.WriteLine("Помилка: некоректний ввід. Використовуйте крапку як десятковий роздільник.");
         }
     }
 
     static void Main()
     {
-        var objects = new List<AbstractHalfObject>();
-        var points = new List<double[]>();
+        // Спроба створити екземпляр абстрактного класу призведе до помилки компіляції:
+        // CS0144: Cannot create an instance of the abstract type or interface 'AbstractHalfObject'
+        // AbstractHalfObject abstractInstance = new AbstractHalfObject();
+
+        var testItems = new List<TestItem>();
         while (true)
         {
             Console.WriteLine("Виберіть тип об'єкта: 1 - Півплощина, 2 - Півпростір, 0 - Вихід");
             var choice = Console.ReadLine();
             if (choice == "0") break;
-            if (choice == "1")
+
+            try
             {
-                var hpCoeffs = ReadDoubles("Введіть коефіцієнти для півплощини (a1 a2 b):", 3);
-                if (hpCoeffs == null) continue;
-                AbstractHalfObject obj = new HalfPlane(hpCoeffs[0], hpCoeffs[1], hpCoeffs[2]);
-                objects.Add(obj);
-                var hpPoint = ReadDoubles("Введіть точку для перевірки (x1 x2):", 2);
-                points.Add(hpPoint);
+                if (choice == "1")
+                {
+                    var hpCoeffs = ReadDoubles("Введіть коефіцієнти для півплощини (a1 a2 b):", 3);
+                    if (hpCoeffs == null) continue;
+                    IGeometricObject obj = new HalfPlane(hpCoeffs[0], hpCoeffs[1], hpCoeffs[2]);
+                    var hpPoint = ReadDoubles("Введіть точку для перевірки (x1 x2):", 2);
+                    testItems.Add(new TestItem(obj, hpPoint));
+                }
+                else if (choice == "2")
+                {
+                    var hsCoeffs = ReadDoubles("Введіть коефіцієнти для півпростору (a1 a2 a3 b):", 4);
+                    if (hsCoeffs == null) continue;
+                    IGeometricObject obj = new HalfSpace(hsCoeffs[0], hsCoeffs[1], hsCoeffs[2], hsCoeffs[3]);
+                    var hsPoint = ReadDoubles("Введіть точку для перевірки (x1 x2 x3):", 3);
+                    testItems.Add(new TestItem(obj, hsPoint));
+                }
+                else
+                {
+                    Console.WriteLine("Некоректний вибір.");
+                }
             }
-            else if (choice == "2")
+            catch (ArgumentException ex)
             {
-                var hsCoeffs = ReadDoubles("Введіть коефіцієнти для півпростору (a1 a2 a3 b):", 4);
-                if (hsCoeffs == null) continue;
-                AbstractHalfObject obj = new HalfSpace(hsCoeffs[0], hsCoeffs[1], hsCoeffs[2], hsCoeffs[3]);
-                objects.Add(obj);
-                var hsPoint = ReadDoubles("Введіть точку для перевірки (x1 x2 x3):", 3);
-                points.Add(hsPoint);
-            }
-            else
-            {
-                Console.WriteLine("Некоректний вибір.");
+                Console.WriteLine($"Помилка: {ex.Message}");
             }
         }
 
         // Демонстрація встановлення коефіцієнтів для першого об'єкта кожного типу
         bool hpCoeffsChanged = false;
         bool hsCoeffsChanged = false;
-        foreach (var obj in objects)
+        foreach (var item in testItems)
         {
-            if (!hpCoeffsChanged && obj is HalfPlane hp && obj.GetType() == typeof(HalfPlane))
+            try
             {
-                Console.WriteLine("\nВи можете змінити коефіцієнти для першої півплощини.");
-                var newCoeffs = ReadDoubles("Введіть нові коефіцієнти (a1 a2 b):", 3);
-                if (newCoeffs != null)
-                    hp.SetCoefficients(newCoeffs);
-                hpCoeffsChanged = true;
+                if (!hpCoeffsChanged && item.GeometricObject is HalfPlane hp)
+                {
+                    Console.WriteLine("\nВи можете змінити коефіцієнти для першої півплощини.");
+                    var newCoeffs = ReadDoubles("Введіть нові коефіцієнти (a1 a2 b):", 3);
+                    if (newCoeffs != null)
+                        hp.SetCoefficients(newCoeffs);
+                    hpCoeffsChanged = true;
+                }
+                if (!hsCoeffsChanged && item.GeometricObject is HalfSpace hs)
+                {
+                    Console.WriteLine("\nВи можете змінити коефіцієнти для першого півпростору.");
+                    var newCoeffs = ReadDoubles("Введіть нові коефіцієнти (a1 a2 a3 b):", 4);
+                    if (newCoeffs != null)
+                        hs.SetCoefficients(newCoeffs);
+                    hsCoeffsChanged = true;
+                }
             }
-            if (!hsCoeffsChanged && obj is HalfSpace hs)
+            catch (ArgumentException ex)
             {
-                Console.WriteLine("\nВи можете змінити коефіцієнти для першого півпростору.");
-                var newCoeffs = ReadDoubles("Введіть нові коефіцієнти (a1 a2 a3 b):", 4);
-                if (newCoeffs != null)
-                    hs.SetCoefficients(newCoeffs);
-                hsCoeffsChanged = true;
+                Console.WriteLine($"Помилка при зміні коефіцієнтів: {ex.Message}");
             }
         }
 
         Console.WriteLine("\nВсі створені об'єкти та перевірка точок:");
-        for (int i = 0; i < objects.Count; i++)
+        foreach (var item in testItems)
         {
-            var obj = objects[i];
-            obj.PrintCoefficients();
+            var obj = item.GeometricObject;
+            var pt = item.Point;
+
+            Console.WriteLine(obj.GetCoefficientsString());
             Console.WriteLine(obj);
-            var pt = points[i];
+            
             if (pt == null)
             {
                 Console.WriteLine("Точка не задана.");
@@ -227,6 +260,7 @@ class Program
             }
             bool result = obj.ContainsPoint(pt);
             Console.WriteLine(result ? "Точка належить об'єкту" : "Точка не належить об'єкту");
+            Console.WriteLine(); // Додаємо порожній рядок для кращої читабельності
         }
     }
 }
