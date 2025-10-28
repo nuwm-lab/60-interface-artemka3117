@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 
-/// <summary>
 /// Інтерфейс для геометричних об'єктів, що визначають область.
 /// </summary>
 public interface IGeometricObject
