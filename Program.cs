@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 
+/// <summary>
 /// Інтерфейс для геометричних об'єктів, що визначають область.
 /// </summary>
 public interface IGeometricObject
@@ -135,6 +136,11 @@ public class HalfSpace : AbstractHalfObject
     public override string ToString() => $"HalfSpace: a1={_a1}, a2={_a2}, a3={_a3}, b={_b}";
 }
 
+/// <summary>
+/// Запис для зберігання пари: геометричний об'єкт та точка для перевірки.
+/// </summary>
+public record TestItem(IGeometricObject GeometricObject, double[] Point);
+
 class Program
 {
     /// <summary>
@@ -172,8 +178,7 @@ class Program
         // CS0144: Cannot create an instance of the abstract type or interface 'AbstractHalfObject'
         // AbstractHalfObject abstractInstance = new AbstractHalfObject();
 
-        var objects = new List<IGeometricObject>();
-        var points = new List<double[]>();
+        var testItems = new List<TestItem>();
         while (true)
         {
             Console.WriteLine("Виберіть тип об'єкта: 1 - Півплощина, 2 - Півпростір, 0 - Вихід");
@@ -187,18 +192,16 @@ class Program
                     var hpCoeffs = ReadDoubles("Введіть коефіцієнти для півплощини (a1 a2 b):", 3);
                     if (hpCoeffs == null) continue;
                     IGeometricObject obj = new HalfPlane(hpCoeffs[0], hpCoeffs[1], hpCoeffs[2]);
-                    objects.Add(obj);
                     var hpPoint = ReadDoubles("Введіть точку для перевірки (x1 x2):", 2);
-                    points.Add(hpPoint);
+                    testItems.Add(new TestItem(obj, hpPoint));
                 }
                 else if (choice == "2")
                 {
                     var hsCoeffs = ReadDoubles("Введіть коефіцієнти для півпростору (a1 a2 a3 b):", 4);
                     if (hsCoeffs == null) continue;
                     IGeometricObject obj = new HalfSpace(hsCoeffs[0], hsCoeffs[1], hsCoeffs[2], hsCoeffs[3]);
-                    objects.Add(obj);
                     var hsPoint = ReadDoubles("Введіть точку для перевірки (x1 x2 x3):", 3);
-                    points.Add(hsPoint);
+                    testItems.Add(new TestItem(obj, hsPoint));
                 }
                 else
                 {
@@ -214,11 +217,11 @@ class Program
         // Демонстрація встановлення коефіцієнтів для першого об'єкта кожного типу
         bool hpCoeffsChanged = false;
         bool hsCoeffsChanged = false;
-        foreach (var obj in objects)
+        foreach (var item in testItems)
         {
             try
             {
-                if (!hpCoeffsChanged && obj is HalfPlane hp)
+                if (!hpCoeffsChanged && item.GeometricObject is HalfPlane hp)
                 {
                     Console.WriteLine("\nВи можете змінити коефіцієнти для першої півплощини.");
                     var newCoeffs = ReadDoubles("Введіть нові коефіцієнти (a1 a2 b):", 3);
@@ -226,7 +229,7 @@ class Program
                         hp.SetCoefficients(newCoeffs);
                     hpCoeffsChanged = true;
                 }
-                if (!hsCoeffsChanged && obj is HalfSpace hs)
+                if (!hsCoeffsChanged && item.GeometricObject is HalfSpace hs)
                 {
                     Console.WriteLine("\nВи можете змінити коефіцієнти для першого півпростору.");
                     var newCoeffs = ReadDoubles("Введіть нові коефіцієнти (a1 a2 a3 b):", 4);
@@ -242,12 +245,14 @@ class Program
         }
 
         Console.WriteLine("\nВсі створені об'єкти та перевірка точок:");
-        for (int i = 0; i < objects.Count; i++)
+        foreach (var item in testItems)
         {
-            var obj = objects[i];
-            Console.WriteLine(obj.GetCoefficientsString()); // Використовуємо метод, що повертає рядок
+            var obj = item.GeometricObject;
+            var pt = item.Point;
+
+            Console.WriteLine(obj.GetCoefficientsString());
             Console.WriteLine(obj);
-            var pt = points[i];
+            
             if (pt == null)
             {
                 Console.WriteLine("Точка не задана.");
